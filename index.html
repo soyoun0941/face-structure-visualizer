@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FaceMesh 구조 보기</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    video, canvas { margin-top: 10px; border-radius: 8px; }
+    .error { color: red; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>📸 내 얼굴 구조 시각화</h2>
+  <video class="input_video" autoplay playsinline></video>
+  <canvas class="output_canvas" width="640px" height="480px"></canvas>
+  <div class="error" id="errorMsg"></div>
+
+  <script>
+    const videoElement = document.getElementsByClassName('input_video')[0];
+    const canvasElement = document.getElementsByClassName('output_canvas')[0];
+    const canvasCtx = canvasElement.getContext('2d');
+    const errorMsg = document.getElementById('errorMsg');
+
+    async function setupCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        videoElement.srcObject = stream;
+        return new Promise((resolve) => {
+          videoElement.onloadedmetadata = () => {
+            resolve(videoElement);
+          };
+        });
+      } catch (err) {
+        errorMsg.textContent = '🚫 카메라 접근이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요. (HTTPS 환경에서만 작동합니다)';
+        throw err;
+      }
+    }
+
+    const faceMesh = new FaceMesh({locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+    }});
+
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    faceMesh.onResults((results) => {
+      canvasCtx.save();
+      canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+      canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+      if (results.multiFaceLandmarks) {
+        for (const landmarks of results.multiFaceLandmarks) {
+          for (let i = 0; i < landmarks.length; i++) {
+            const x = landmarks[i].x * canvasElement.width;
+            const y = landmarks[i].y * canvasElement.height;
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 1, 0, 2 * Math.PI);
+            canvasCtx.fillStyle = "cyan";
+            canvasCtx.fill();
+          }
+        }
+      }
+      canvasCtx.restore();
+    });
+
+    setupCamera().then(() => {
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await faceMesh.send({image: videoElement});
+        },
+        width: 640,
+        height: 480
+      });
+      camera.start();
+    }).catch((e) => {
+      console.error('카메라 접근 오류:', e);
+    });
+  </script>
+</body>
+</html>
