@@ -47,7 +47,7 @@
       return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     }
 
-    function classifyRelative(value, avg, tol = 0.015) {
+    function classifyRelative(value, avg, tol = 0.012) {
       const diff = value - avg;
       if (Math.abs(diff) <= tol) return '평균 범위입니다';
       if (diff < -tol) return '평균보다 좁은 편입니다';
