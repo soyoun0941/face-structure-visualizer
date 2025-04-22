@@ -53,6 +53,8 @@
       if (diff < -tol) return '평균보다 좁은 편입니다';
       return '평균보다 넓은 편입니다';
     }
+    <li><strong>눈 사이 비율:</strong> ${(ratios.eyeDistance / ratios.horizontal).toFixed(3)} (${ratios.eyeComment})</li>
+
 
     function classifyFaceShape(ratio, jawWidthRatio) {
       if (jawWidthRatio < 0.8 && ratio < 1.2) return '계란형';
